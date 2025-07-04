@@ -99,24 +99,89 @@ def createOutputDirectory(subdirs):
             conc_tag = tag[2]
             yellow_pea_tag = tag[3]
 
+# USE 'output' for now, will be related to directory name later
 def createOutputDirectoryVer1(dir):
     return makeNumberedDir('output')
-    
+
+def reorderCompound(og_list):
+    list_for_control = []
+    list_for_other = []
+    for com in og_list:
+        if 'control' in com:
+            list_for_control.append(com)
+        else:
+            list_for_other.append(com)
+
+    return list_for_other + list_for_control
+
 def getAllFilesInDirectory(dir):
-    return [f for f in os.listdir(dir) if os.path.isfile(os.path.join(dir,f))]
+    list_of_compound = [f for f in os.listdir(dir) if os.path.isfile(os.path.join(dir,f))]
+    return reorderCompound(list_of_compound)
 
 def getCompoundName(filename):
     return filename.split('.')[0]
 
-def getConcentrationFromDir(dir):
+def findConcentration(dir):
     if '_' in dir:
         tag = dir.split('_')
-        conc_tag = tag[2]
-        return float('0.'+conc_tag)
+        zero_tag = tag.index('0')
+        # the next value of zero tag is conc 0_01 -> 0.01
+        conc_tag = tag[zero_tag+1]
+    else : 
+        conc_tag = '0'
+        print('No concentration found, using 0!')
+    return conc_tag
+
+def getConcentrationValue(dir):
+    conc_string = findConcentration(dir)
+    if conc_string != '0':
+        return float('0.'+ conc_string)
     else :
         return 0
+    
+def getConcentrationString(dir):
+    conc_string = findConcentration(dir)
+    if conc_string != '0':
+        return '0_'+ conc_string
+    else :
+        return '0'
+    
+def checkYP(dir):
+    if '_' in dir:
+        tag = dir.split('_')
+        tag_lower = [tag_.lower() for tag_ in tag]
+        return ('yp' in tag_lower)
+    else:
+        return False
+
         
 # ===================================== Plotting ===================================================
+    
+# Color Param
+color_param_og = {
+    'acacetin': (200, 222, 249),
+    'baicalein': (144,191,249),
+    'kaempferol': (85, 160, 251),
+    'catechin': (192, 192, 255),
+    'epicatechin' : (141, 141, 255),
+    'epigallocatechin': (87, 87, 249),
+    'yellow_peas' : (255, 204, 0),
+    'fraction_1' : (255, 224, 192),
+    'fraction_2' : (255, 192, 128),
+    'fraction_3' : (255, 160, 64),
+    'fraction_4' : (255, 128, 0),
+    'fraction_5' : (255, 96, 0),
+    'fraction_6' : (255, 64, 64),
+    'fraction_7' : (255, 0, 0),
+    'control' : (212, 212, 212),                # For testing
+    'control_negative' : (212, 212, 212),
+    'control_positive' : (128, 128, 128)
+}
+
+color_param_normalized = {
+    k: tuple(c / 255 for c in v)
+    for k, v in color_param_og.items()
+}
  
 # Plot all compounds graph one by one
 def plotFittedGraphOnebyOne(data_dicts, conc = 0.01 ,output_path = None):
@@ -131,10 +196,15 @@ def plotFittedGraphOnebyOne(data_dicts, conc = 0.01 ,output_path = None):
         if avg_good is None:
             print(f"'Running Average' is missing for {compound}!")
 
-        fig = plt.figure()
+        plt.rcParams.update({'font.size': 20})
 
+        fig = plt.figure(figsize=(18,8))
+        plot_color = color_param_normalized.get(compound.lower())
+        if plot_color == None:
+            plot_color = 'red'
+            print(f'The color for {compound} is not valid, using red! Please add it!')
         plt.plot(t, avg, color='black',label='Raw Data')
-        plt.plot(t, avg_good, color='red',label='Run Graph')
+        plt.plot(t, avg_good, color=plot_color,label='Run Graph')
 
         plt.grid(True)
         custom_yticks = [500,1000,1500]
@@ -146,8 +216,9 @@ def plotFittedGraphOnebyOne(data_dicts, conc = 0.01 ,output_path = None):
         plt.xlabel('Time (h)')
         plt.ylabel('Luminescence (count/sec)')
         plt.grid(axis='y', visible=False)
-        plt.legend()
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.title(f'Compounds {compound}({conc} mg/mL)')
+        plt.tight_layout()
         # plt.show()
 
         os.makedirs(os.path.join(output_path,'smooth_check'), exist_ok= True)
@@ -158,13 +229,19 @@ def plotRawGraphAllInOne(data_dicts, conc = 0.01 ,output_path = None):
     if output_path == None or not os.path.isdir(output_path):
         os.makedirs(f'Temp_output_{conc}',exist_ok=True)
         print('No output directory exist, adding output directory or change it.')
+    
+    plt.rcParams.update({'font.size': 20})
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(18,8))
     for compound ,data_dict in data_dicts.items():
         t = data_dict['Time (h)']
         avg = data_dict['Average']
         
-        plt.plot(t, avg,label=f'{compound}')
+        plot_color = color_param_normalized.get(compound.lower())
+        if plot_color == None:
+            plot_color = 'red'
+            print(f'The color for {compound} is not valid, using red! Please add it!')
+        plt.plot(t, avg,label=f'{compound}', color = plot_color)
 
     plt.grid(True)
     custom_yticks = [500,1000,1500]
@@ -176,8 +253,9 @@ def plotRawGraphAllInOne(data_dicts, conc = 0.01 ,output_path = None):
     plt.xlabel('Time (h)')
     plt.ylabel('Luminescence (count/sec)')
     plt.grid(axis='y', visible=False)
-    plt.legend()
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.title(f'Compounds ({conc} mg/mL)')
+    plt.tight_layout()
     # plt.show()
 
     fig.savefig(os.path.join(output_path,f'graph_all_raw.png'))
@@ -188,8 +266,9 @@ def plotCleanGraphAllInOne(data_dicts, period_dict,  conc = 0.01 ,output_path = 
         os.makedirs(f'Temp_output_{conc}',exist_ok=True)
         print('No output directory exist, adding output directory or change it.')
 
-    
-    fig = plt.figure()
+    plt.rcParams.update({'font.size': 20})
+
+    fig = plt.figure(figsize=(18,8))
     for compound ,data_dict in data_dicts.items():
         t = data_dict['Time (h)']
         avg_good = data_dict.get('Running Average')
@@ -202,7 +281,11 @@ def plotCleanGraphAllInOne(data_dicts, period_dict,  conc = 0.01 ,output_path = 
             for peak in peaks:
                 plt.scatter(t[peak],avg_good[peak],color = 'red')
 
-        plt.plot(t, avg_good,label=f'{compound}')
+        plot_color = color_param_normalized.get(compound.lower())
+        if plot_color == None:
+            plot_color = 'red'
+            print(f'The color for {compound} is not valid, using red! Please add it!')
+        plt.plot(t, avg_good,label=f'{compound}',color = plot_color)
 
     plt.grid(True)
     custom_yticks = [500,1000,1500]
@@ -214,8 +297,9 @@ def plotCleanGraphAllInOne(data_dicts, period_dict,  conc = 0.01 ,output_path = 
     plt.xlabel('Time (h)')
     plt.ylabel('Luminescence (count/sec)')
     plt.grid(axis='y', visible=False)
-    plt.legend()
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.title(f'Compounds ({conc} mg/mL)')
+    plt.tight_layout()
     # plt.show()
 
     graph_name = 'graph_all_smooth_peak.png' if spot_peak else 'graph_all_smooth.png'
