@@ -99,14 +99,17 @@ def createOutputDirectory(subdirs):
             conc_tag = tag[2]
             yellow_pea_tag = tag[3]
 
-# USE 'output' for now, will be related to directory name later
+# USE 'output_conc' for now, will be related to directory name later
 def createOutputDirectoryVer1(dir):
-    return makeNumberedDir('output')
+    conc_string = getConcentrationString(dir)
+    output_name = f'output_{conc_string}_YP' if checkYP(dir) else f'output_{conc_string}'
+    return makeNumberedDir(output_name)
 
 def reorderCompound(og_list):
     list_for_control = []
     list_for_other = []
-    for com in og_list:
+    og_list_lower = [i.lower() for i in og_list]
+    for com in og_list_lower:
         if 'control' in com:
             list_for_control.append(com)
         else:
@@ -115,7 +118,7 @@ def reorderCompound(og_list):
     return list_for_other + list_for_control
 
 def getAllFilesInDirectory(dir):
-    list_of_compound = [f for f in os.listdir(dir) if os.path.isfile(os.path.join(dir,f))]
+    list_of_compound = [f for f in os.listdir(dir) if os.path.isfile(os.path.join(dir,f)) and not f.startswith('.')]
     return reorderCompound(list_of_compound)
 
 def getCompoundName(filename):
@@ -154,7 +157,6 @@ def checkYP(dir):
     else:
         return False
 
-        
 # ===================================== Plotting ===================================================
     
 # Color Param
