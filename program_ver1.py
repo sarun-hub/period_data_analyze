@@ -26,10 +26,7 @@ def main1():
         # Resample data (interpolation)
         print(f'Interpolate {compound_name}')
         avg_resampled, t_resampled  = getInterpolatedData(compound_df)
-        if compound_name == "Acacetin":
-            print('Hello')
-            print(np.where(np.isclose(t_resampled, 12.0))[0])
-            print(t_resampled[np.where(np.isclose(t_resampled, 12.0))[0]])
+        
         # Remove noise (use Running Average with window = 200)
         print(f'Running Average {compound_name}')
         avg_good = run_ave(avg_resampled, nave =200)
