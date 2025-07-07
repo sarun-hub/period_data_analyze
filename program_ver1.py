@@ -26,14 +26,17 @@ def main1():
         # Resample data (interpolation)
         print(f'Interpolate {compound_name}')
         avg_resampled, t_resampled  = getInterpolatedData(compound_df)
-        
+        if compound_name == "Acacetin":
+            print('Hello')
+            print(np.where(np.isclose(t_resampled, 12.0))[0])
+            print(t_resampled[np.where(np.isclose(t_resampled, 12.0))[0]])
         # Remove noise (use Running Average with window = 200)
         print(f'Running Average {compound_name}')
         avg_good = run_ave(avg_resampled, nave =200)
 
         # find the first period (two peak for illustration)
         print(f'Finding peak {compound_name}')
-        first_period, two_peak = findFirstPeriod2(avg_good, t_resampled,100)
+        first_period, two_peak = findFirstPeriod2(avg_good, t_resampled, window_size=100, start_time=12)
 
         # Collect Data in Dataframe dict (for plotting)
         data_dict[compound_name] = {}

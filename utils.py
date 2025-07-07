@@ -22,7 +22,7 @@ def getInterpolatedData(data_dict):
     avg = data_dict['Average'].to_list()
 
     dt_new = 0.01
-    t_resampled = np.arange(t[0], t[-1], dt_new)
+    t_resampled = np.arange(1, t[-1], dt_new)
 
     interp_func = interp1d(t,avg, kind='cubic')
     avg_resampled = interp_func(t_resampled)
@@ -42,10 +42,12 @@ def run_ave(data,nave = 200):
 
     return y
 
-def find_two_peaks(x, window_size = 100):
+def find_two_peaks(x, t,window_size = 100, start_time = 12):
     x = np.asarray(x)
+    start_index = int(np.where(np.isclose(t, start_time))[0][0])
     # First peak: global maximum
-    first_peak = int(np.argmax(x))
+    first_relative_index_peak = int(np.argmax(x[start_index:]))
+    first_peak = start_index + first_relative_index_peak
 
     # Second peak: first local maximum after the first peak
     second_peak = None
@@ -61,8 +63,8 @@ def find_two_peaks(x, window_size = 100):
 
     return (first_peak, second_peak)
 
-def findFirstPeriod2(avg_value, time_value,  window_size = 100):
-    first_peak, second_peak = find_two_peaks(avg_value, window_size)
+def findFirstPeriod2(avg_value, time_value,  window_size = 100, start_time = 12):
+    first_peak, second_peak = find_two_peaks(avg_value, time_value, window_size, start_time)
     first_period = time_value[second_peak] - time_value[first_peak]
     return first_period, (first_peak, second_peak)
 
@@ -115,14 +117,14 @@ def reorderCompound(og_list):
         else:
             list_for_other.append(com)
 
-    return list_for_other + list_for_control
+    return sorted(list_for_other) + list_for_control
 
 def getAllFilesInDirectory(dir):
     list_of_compound = [f for f in os.listdir(dir) if os.path.isfile(os.path.join(dir,f)) and not f.startswith('.')]
     return reorderCompound(list_of_compound)
 
 def getCompoundName(filename):
-    return filename.split('.')[0]
+    return filename.split('.')[0].capitalize()
 
 def findConcentration(dir):
     if '_' in dir:
@@ -156,6 +158,9 @@ def checkYP(dir):
         return ('yp' in tag_lower)
     else:
         return False
+
+def replaceSpaceWithUnderscore(word):
+    return word.replace(' ','_')
 
 # ===================================== Plotting ===================================================
     
@@ -201,7 +206,7 @@ def plotFittedGraphOnebyOne(data_dicts, conc = 0.01 ,output_path = None):
         plt.rcParams.update({'font.size': 20})
 
         fig = plt.figure(figsize=(18,8))
-        plot_color = color_param_normalized.get(compound.lower())
+        plot_color = color_param_normalized.get(replaceSpaceWithUnderscore(compound.lower()))
         if plot_color == None:
             plot_color = 'red'
             print(f'The color for {compound} is not valid, using red! Please add it!')
@@ -239,7 +244,7 @@ def plotRawGraphAllInOne(data_dicts, conc = 0.01 ,output_path = None):
         t = data_dict['Time (h)']
         avg = data_dict['Average']
         
-        plot_color = color_param_normalized.get(compound.lower())
+        plot_color = color_param_normalized.get(replaceSpaceWithUnderscore(compound.lower()))
         if plot_color == None:
             plot_color = 'red'
             print(f'The color for {compound} is not valid, using red! Please add it!')
@@ -283,7 +288,7 @@ def plotCleanGraphAllInOne(data_dicts, period_dict,  conc = 0.01 ,output_path = 
             for peak in peaks:
                 plt.scatter(t[peak],avg_good[peak],color = 'red')
 
-        plot_color = color_param_normalized.get(compound.lower())
+        plot_color = color_param_normalized.get(replaceSpaceWithUnderscore(compound.lower()))
         if plot_color == None:
             plot_color = 'red'
             print(f'The color for {compound} is not valid, using red! Please add it!')
