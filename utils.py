@@ -17,6 +17,20 @@ def getValidDataFrame(filename):
     df = df[valid_mask]
     return df
 
+def getInterpolatedDataSeparate(data_dict):
+    rep_list = []
+    target_rep = ['rep1','rep2','rep3']
+    t = data_dict['Time (h)'].to_list()
+    dt_new = 0.01
+    t_resampled = np.arange(1, t[-1], dt_new)
+
+    for rep_name in target_rep:
+        rep = data_dict[rep_name].to_list()
+        interp_func = interp1d(t,rep, kind='cubic')
+        rep_list.append(interp_func(t_resampled))
+
+    return  rep_list, t_resampled
+
 def getInterpolatedData(data_dict):
     t = data_dict['Time (h)'].to_list()
     avg = data_dict['Average'].to_list()
@@ -105,6 +119,11 @@ def createOutputDirectory(subdirs):
 def createOutputDirectoryVer1(dir):
     conc_string = getConcentrationString(dir)
     output_name = f'output_{conc_string}_YP' if checkYP(dir) else f'output_{conc_string}'
+    return makeNumberedDir(output_name)
+
+def createOutputDirectorySeparate(dir):
+    conc_string = getConcentrationString(dir)
+    output_name = f'output_separate_{conc_string}_YP' if checkYP(dir) else f'output_separate_{conc_string}'
     return makeNumberedDir(output_name)
 
 def reorderCompound(og_list):
