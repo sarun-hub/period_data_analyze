@@ -9,17 +9,16 @@ from scipy.interpolate import interp1d
 # =================================== Data Related ==================================================
 
 # from filename, get the dataframe with Average value (only valid data)
-def getValidDataFrame(filename):
+def getValidDataFrame(filename,target_rep = ['rep 1','rep 2','rep 3']):
     df = pd.read_csv(filename)
-    df['Average'] = df.loc[:,['rep1','rep2','rep3']].mean(axis=1)
+    df['Average'] = df.loc[:,target_rep].mean(axis=1)
     # Check the row that valid both Timea and Average
     valid_mask = (~np.isnan(df['Time (h)'])) & (~np.isnan(df['Average'])) & (~np.isinf(df['Time (h)'])) & (~np.isinf(df['Average']))
     df = df[valid_mask]
     return df
 
-def getInterpolatedDataSeparate(data_dict):
+def getInterpolatedDataSeparate(data_dict,target_rep = ['rep 1','rep 2','rep 3']):
     rep_list = []
-    target_rep = ['rep1','rep2','rep3']
     t = data_dict['Time (h)'].to_list()
     dt_new = 0.01
     t_resampled = np.arange(1, t[-1], dt_new)
@@ -77,8 +76,35 @@ def find_two_peaks(x, t,window_size = 100, start_time = 12):
 
     return (first_peak, second_peak)
 
+def find_two_peaks_new(x, t, window_size=100, start_time=12):
+    x = np.asarray(x)
+    start_index = int(np.where(np.isclose(t, start_time))[0][0])
+    
+    peaks = []
+    
+    # scan from start_index onward
+    for i in range(start_index + window_size, len(x) - window_size):
+        window = x[i - window_size:i + window_size + 1]
+        center = window[window_size]
+        neighbors = np.delete(window, window_size)
+
+        if np.all(center > neighbors):  # local maximum
+            peaks.append(i)
+            if len(peaks) == 2:
+                break
+
+    # return first and second local maxima (or None if missing)
+    if len(peaks) < 2:
+        peaks += [None] * (2 - len(peaks))
+    return tuple(peaks)
+
 def findFirstPeriod2(avg_value, time_value,  window_size = 100, start_time = 12):
     first_peak, second_peak = find_two_peaks(avg_value, time_value, window_size, start_time)
+    first_period = time_value[second_peak] - time_value[first_peak]
+    return first_period, (first_peak, second_peak)
+
+def findFirstPeriod3(avg_value, time_value,  window_size = 100, start_time = 12):
+    first_peak, second_peak = find_two_peaks_new(avg_value, time_value, window_size, start_time)
     first_period = time_value[second_peak] - time_value[first_peak]
     return first_period, (first_peak, second_peak)
 
